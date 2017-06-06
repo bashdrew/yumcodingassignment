@@ -38,7 +38,8 @@ import (
 	"log"
 	"net"
 
-	pb "bashdrew/yumcodingassignment/yumaddressbook"
+	pbdb "bashdrew/yumcodingassignment/addrbookdb"
+	pb "bashdrew/yumcodingassignment/addrbookrestapi"
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -46,48 +47,112 @@ import (
 )
 
 const (
-	port = ":50051"
+	port      = ":50051"
+	dbAddress = "localhost:50052"
 )
-
-type Person struct {
-	ID        string   `json:"id,omitemty"`
-	FirstName string   `json:"firstname,omitemty"`
-	LastName  string   `json:"lastname,omitemty"`
-	Address   *Address `json:"address,omitempty"`
-}
-
-type Address struct {
-	City  string `json:"city,omitempty"`
-	State string `json:"state,omitempty"`
-}
-
-var people []Person
 
 // server is used to implement AddrBookRestAPI.GetPerson.
 type server struct{}
 
-// SayHello implements helloworld.GreeterServer
+func getDBConn() (conn *grpc.ClientConn, client pbdb.AddrBookDBClient, err error) {
+	conn, err = grpc.Dial(dbAddress, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
+	}
+
+	client = pbdb.NewAddrBookDBClient(conn)
+
+	return
+}
+
+// GetPerson implements AddrBookRestAPI.GetPerson
 func (s *server) GetPerson(ctx context.Context, in *pb.PersonRequest) (*pb.PersonReply, error) {
-	var person Person
+	var person *pbdb.PersonReplyDB
+	// Set up a connection to the server.
+	conn, c, err := getDBConn()
+	defer conn.Close()
 
-	for _, item := range people {
-		if item.ID == in.Id {
-			person = item
-
-			break
+	if err == nil {
+		// Contact the server and print out its response.
+		person, err = c.ReadPersonDB(context.Background(), &pbdb.PersonRequestDB{Id: in.Id})
+		if err != nil {
+			log.Fatalf("could not get person from DB: %v", err)
 		}
 	}
 
-	return &pb.PersonReply{Id: person.ID, Firstname: person.FirstName, Lastname: person.LastName}, nil
+	return &pb.PersonReply{
+		Id:        person.Id,
+		Firstname: person.Firstname,
+		Lastname:  person.Lastname,
+		Email:     person.Email,
+		Phoneno:   person.Phoneno,
+	}, nil
+}
+
+// PostPerson implements AddrBookRestAPI.PostPerson
+func (s *server) PostPerson(ctx context.Context, in *pb.PersonReply) (*pb.PersonReply, error) {
+	var person *pbdb.PersonReplyDB
+	// Set up a connection to the server.
+	conn, c, err := getDBConn()
+	defer conn.Close()
+
+	if err == nil {
+		// Contact the server and print out its response.
+		person, err = c.CreatePersonDB(context.Background(),
+			&pbdb.PersonReplyDB{
+				Id:        in.Id,
+				Firstname: in.Firstname,
+				Lastname:  in.Lastname,
+				Email:     in.Email,
+				Phoneno:   in.Phoneno,
+			})
+		if err != nil {
+			log.Fatalf("could not post person to DB: %v", err)
+		}
+	}
+
+	return &pb.PersonReply{
+		Id:        person.Id,
+		Firstname: person.Firstname,
+		Lastname:  person.Lastname,
+		Email:     person.Email,
+		Phoneno:   person.Phoneno,
+	}, nil
+}
+
+// PutPerson implements AddrBookRestAPI.PutPerson
+func (s *server) PutPerson(ctx context.Context, in *pb.PersonReply) (*pb.PersonReply, error) {
+	var person *pbdb.PersonReplyDB
+	// Set up a connection to the server.
+	conn, c, err := getDBConn()
+	defer conn.Close()
+
+	if err == nil {
+		// Contact the server and print out its response.
+		person, err = c.UpdatePersonDB(context.Background(),
+			&pbdb.PersonReplyDB{
+				Id:        in.Id,
+				Firstname: in.Firstname,
+				Lastname:  in.Lastname,
+				Email:     in.Email,
+				Phoneno:   in.Phoneno,
+			})
+		if err != nil {
+			log.Fatalf("could not put person to DB: %v", err)
+		}
+	}
+
+	return &pb.PersonReply{
+		Id:        person.Id,
+		Firstname: person.Firstname,
+		Lastname:  person.Lastname,
+		Email:     person.Email,
+		Phoneno:   person.Phoneno,
+	}, nil
 }
 
 func init() {
-	fmt.Println("Initializing mock data...")
-	// initialize mock data
-	people = append(people, Person{ID: "1", FirstName: "Andrew", LastName: "Amargo", Address: &Address{City: "Plano", State: "Texas"}})
-	people = append(people, Person{ID: "2", FirstName: "Cari", LastName: "Amargo"})
-	people = append(people, Person{ID: "3", FirstName: "Paulo", LastName: "Amargo", Address: &Address{City: "Plano", State: "TX"}})
-	people = append(people, Person{ID: "4", FirstName: "Paco", LastName: "Amargo", Address: &Address{City: "Plano", State: "TX"}})
+	fmt.Println("REST API Microservice started...")
 }
 
 func main() {

@@ -30,31 +30,36 @@
 syntax = "proto3";
 
 option java_multiple_files = true;
-option java_package = "io.grpc.yumaddressbook";
-option java_outer_classname = "YumAddressBookProto";
+option java_package = "io.grpc.addrbookdb";
+option java_outer_classname = "AddrBookDBProto";
 
-package yumaddressbook;
+package addrbookdb;
 
 // The greeting service definition.
-service AddrBookRestAPI {
+service AddrBookDB {
   // Gets a person details
-  rpc GetPerson (PersonRequest) returns (PersonReply) {}
+  rpc ReadPersonDB (PersonRequestDB) returns (PersonReplyDB) {}
+  // Creats a person details
+  rpc CreatePersonDB (PersonReplyDB) returns (PersonReplyDB) {}
+  // Update a person details
+  rpc UpdatePersonDB (PersonReplyDB) returns (PersonReplyDB) {}
 }
 
 // The request message containing the user's id.
-message PersonRequest {
-  string id = 1;
+message PersonRequestDB {
+  int64 id = 1;
 }
 
 // The request message containing the user's id.
-message PersonReply {
-  string id = 1;
+message PersonReplyDB {
+  int64 id = 1;
   string firstname = 2;
   string lastname = 3;
-  string address = 4;
+  string email = 4;
+  string phoneno = 5;
 }
 
 // The response message containing the list of persons
-message PeopleReply {
-  repeated PersonReply people = 1;
+message PeopleReplyDB {
+  repeated PersonReplyDB people = 1;
 }

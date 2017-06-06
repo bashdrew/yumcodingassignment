@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
-	pb "bashdrew/yumcodingassignment/yumaddressbook"
+	pb "bashdrew/yumcodingassignment/addrbookrestapi"
 
 	"google.golang.org/grpc"
 
@@ -20,23 +22,18 @@ const (
 
 const (
 	colID        = "id"
-	colFirstName = "firstname"
-	colLastName  = "lastname"
-	colAddress   = "address"
-	colCity      = "city"
-	colState     = "state"
+	colFirstname = "firstname"
+	colLastname  = "lastname"
+	colEmail     = "email"
+	colPhoneno   = "phoneno"
 )
 
 type Person struct {
-	ID        string   `json:"id,omitemty"`
-	FirstName string   `json:"firstname,omitemty"`
-	LastName  string   `json:"lastname,omitemty"`
-	Address   *Address `json:"address,omitempty"`
-}
-
-type Address struct {
-	City  string `json:"city,omitempty"`
-	State string `json:"state,omitempty"`
+	ID        string `json:"id,omitemty"`
+	Firstname string `json:"firstname,omitemty"`
+	Lastname  string `json:"lastname,omitemty"`
+	Email     string `json:"email,omitempty"`
+	Phoneno   string `json:"phoneno,omitempty"`
 }
 
 var people []Person
@@ -66,8 +63,9 @@ func GetPersonEndpoint(w http.ResponseWriter, req *http.Request) {
 	if err == nil {
 		// Contact the server and print out its response.
 		params := mux.Vars(req)
+		id64, _ := strconv.ParseInt(params[colID], 10, 64)
 
-		person, err = c.GetPerson(context.Background(), &pb.PersonRequest{Id: params[colID]})
+		person, err = c.GetPerson(context.Background(), &pb.PersonRequest{Id: id64})
 		if err != nil {
 			log.Fatalf("could not get person: %v", err)
 		}
@@ -76,19 +74,67 @@ func GetPersonEndpoint(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(person)
 }
 
-// CreatePersonEndpoint ... get person
+// CreatePersonEndpoint ... post person
 func CreatePersonEndpoint(w http.ResponseWriter, req *http.Request) {
-	params := mux.Vars(req)
-	var person Person
+	var person *pb.PersonReply
+	// Set up a connection to the server.
+	conn, c, err := getRestAPIConn()
+	defer conn.Close()
+	if err == nil {
+		// Contact the server and print out its response.
+		//		var personDtls common.PersonDetails
 
-	_ = json.NewDecoder(req.Body).Decode(&person)
-	person.ID = params["id"]
-	people = append(people, person)
+		params := mux.Vars(req)
+		_ = json.NewDecoder(req.Body).Decode(&person)
+		id64, _ := strconv.ParseInt(params[colID], 10, 64)
 
-	json.NewEncoder(w).Encode(people)
+		person, err = c.PostPerson(context.Background(),
+			&pb.PersonReply{
+				Id:        id64,
+				Firstname: person.Firstname,
+				Lastname:  person.Lastname,
+				Email:     person.Email,
+				Phoneno:   person.Phoneno,
+			})
+		if err != nil {
+			log.Fatalf("could not post person: %v", err)
+		}
+	}
+
+	json.NewEncoder(w).Encode(person)
 }
 
-// DeletePersonEndpoint ... get person
+// UpdatePersonEndpoint ... put person
+func UpdatePersonEndpoint(w http.ResponseWriter, req *http.Request) {
+	var person *pb.PersonReply
+	// Set up a connection to the server.
+	conn, c, err := getRestAPIConn()
+	defer conn.Close()
+	if err == nil {
+		// Contact the server and print out its response.
+		//		var personDtls common.PersonDetails
+
+		params := mux.Vars(req)
+		_ = json.NewDecoder(req.Body).Decode(&person)
+		id64, _ := strconv.ParseInt(params[colID], 10, 64)
+
+		person, err = c.PutPerson(context.Background(),
+			&pb.PersonReply{
+				Id:        id64,
+				Firstname: person.Firstname,
+				Lastname:  person.Lastname,
+				Email:     person.Email,
+				Phoneno:   person.Phoneno,
+			})
+		if err != nil {
+			log.Fatalf("could not put person: %v", err)
+		}
+	}
+
+	json.NewEncoder(w).Encode(person)
+}
+
+// DeletePersonEndpoint ... delete person
 func DeletePersonEndpoint(w http.ResponseWriter, req *http.Request) {
 	params := mux.Vars(req)
 	for idx, item := range people {
@@ -107,17 +153,18 @@ func setupRestAPIConn() (conn *grpc.ClientConn, err error) {
 
 	return
 }
-func main() {
-	// initialize mock data
-	people = append(people, Person{ID: "1", FirstName: "Andrew", LastName: "Amargo", Address: &Address{City: "Plano", State: "Texas"}})
-	people = append(people, Person{ID: "2", FirstName: "Cari", LastName: "Amargo"})
-	people = append(people, Person{ID: "3", FirstName: "Paulo", LastName: "Amargo", Address: &Address{City: "Plano", State: "TX"}})
 
+func init() {
+	fmt.Println("Frontend Microservice started...")
+}
+
+func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/people", GetPeopleEndpoint).Methods("GET")
 	router.HandleFunc("/people/{"+colID+"}", GetPersonEndpoint).Methods("GET")
-	router.HandleFunc("/people/{id}", CreatePersonEndpoint).Methods("POST")
-	router.HandleFunc("/people/{id}", DeletePersonEndpoint).Methods("DELETE")
+	router.HandleFunc("/people/{"+colID+"}", CreatePersonEndpoint).Methods("POST")
+	router.HandleFunc("/people/{"+colID+"}", UpdatePersonEndpoint).Methods("PUT")
+	router.HandleFunc("/people/{"+colID+"}", DeletePersonEndpoint).Methods("DELETE")
 
 	log.Fatal(http.ListenAndServe(port, router))
 }
