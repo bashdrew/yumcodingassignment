@@ -136,15 +136,22 @@ func UpdatePersonEndpoint(w http.ResponseWriter, req *http.Request) {
 
 // DeletePersonEndpoint ... delete person
 func DeletePersonEndpoint(w http.ResponseWriter, req *http.Request) {
-	params := mux.Vars(req)
-	for idx, item := range people {
-		if item.ID == params["id"] {
-			people = append(people[:idx], people[idx+1:]...)
+	var person *pb.PersonReply
+	// Set up a connection to the server.
+	conn, c, err := getRestAPIConn()
+	defer conn.Close()
+	if err == nil {
+		// Contact the server and print out its response.
+		params := mux.Vars(req)
+		id64, _ := strconv.ParseInt(params[colID], 10, 64)
 
-			break
+		person, err = c.DeletePerson(context.Background(), &pb.PersonRequest{Id: id64})
+		if err != nil {
+			log.Fatalf("could not get person: %v", err)
 		}
 	}
-	json.NewEncoder(w).Encode(people)
+
+	json.NewEncoder(w).Encode(person)
 }
 
 func setupRestAPIConn() (conn *grpc.ClientConn, err error) {

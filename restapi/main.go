@@ -151,6 +151,30 @@ func (s *server) PutPerson(ctx context.Context, in *pb.PersonReply) (*pb.PersonR
 	}, nil
 }
 
+// DeletePerson implements AddrBookRestAPI.DeletePerson
+func (s *server) DeletePerson(ctx context.Context, in *pb.PersonRequest) (*pb.PersonReply, error) {
+	var person *pbdb.PersonReplyDB
+	// Set up a connection to the server.
+	conn, c, err := getDBConn()
+	defer conn.Close()
+
+	if err == nil {
+		// Contact the server and print out its response.
+		person, err = c.DeletePersonDB(context.Background(), &pbdb.PersonRequestDB{Id: in.Id})
+		if err != nil {
+			log.Fatalf("could not get person from DB: %v", err)
+		}
+	}
+
+	return &pb.PersonReply{
+		Id:        person.Id,
+		Firstname: person.Firstname,
+		Lastname:  person.Lastname,
+		Email:     person.Email,
+		Phoneno:   person.Phoneno,
+	}, nil
+}
+
 func init() {
 	fmt.Println("REST API Microservice started...")
 }

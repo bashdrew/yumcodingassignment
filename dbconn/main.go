@@ -38,6 +38,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"reflect"
+	"strings"
 
 	pbdb "bashdrew/yumcodingassignment/addrbookdb"
 
@@ -76,6 +78,25 @@ func getPersonByID(id int64) (person *pbdb.PersonReplyDB, err error) {
 	return person, err
 }
 
+func generateSetStatement(person *pbdb.PersonReplyDB) (result string) {
+	updCols := []string{"id", "firstname", "lastname", "email", "phoneno"}
+
+	v := reflect.ValueOf(*person)
+	values := make([]interface{}, v.NumField())
+
+	result = "SET "
+	for i := 1; i < v.NumField(); i++ {
+		if v.Field(i).Interface().(string) != "" {
+			result = result + updCols[i] + " = '" + v.Field(i).Interface().(string) + "', "
+			values[i] = v.Field(i).Interface()
+		}
+	}
+
+	result = strings.TrimRight(result, ", ")
+
+	return
+}
+
 // ReadPersonDB implements AddrBookDB.ReadPersonDB
 func (s *server) ReadPersonDB(ctx context.Context, in *pbdb.PersonRequestDB) (*pbdb.PersonReplyDB, error) {
 	person, _ := getPersonByID(in.Id)
@@ -106,35 +127,38 @@ func (s *server) CreatePersonDB(ctx context.Context, in *pbdb.PersonReplyDB) (*p
 
 // UpdatePersonDB implements AddrBookDB.CreatePersonDB
 func (s *server) UpdatePersonDB(ctx context.Context, in *pbdb.PersonReplyDB) (*pbdb.PersonReplyDB, error) {
-	// We need a pointer so that we can set the value via reflection
-	/*	msValuePtr := reflect.ValueOf(&in)
-		msValue := msValuePtr.Elem()
-
-		for i := 0; i < msValue.NumField(); i++ {
-			field := msValue.Field(i)
-
-			// Ignore fields that don't have the same type as a string
-			if field.Type() != reflect.TypeOf("") {
-				continue
-			}
-
-			str := field.Interface().(string)
-			str = strings.TrimSpace(str)
-			field.SetString(str)
-
-			fmt.Println(field, str)
-		}
-	*/
 	person := new(pbdb.PersonReplyDB)
 
-	qry := fmt.Sprintf("INSERT INTO people (id, firstname, lastname, email, phoneno) VALUES (?, ?, ?, ?, ?)")
+	qrySet := generateSetStatement(in)
+	qry := fmt.Sprintf("UPDATE people %v WHERE id = %v", qrySet, in.Id)
+	fmt.Println(qry)
 	statement, errDB := database.Prepare(qry)
 	if errDB == nil {
-		_, errSt := statement.Exec(in.Id, in.Firstname, in.Lastname, in.Email, in.Phoneno)
+		_, errSt := statement.Exec()
 
 		if errSt == nil {
 			person, _ = getPersonByID(in.Id)
 		} else {
+			log.Fatalf("DB error: %v", errDB)
+		}
+	} else {
+		log.Fatalf("DB error: %v", errDB)
+	}
+
+	return person, nil
+}
+
+// UpdatePersonDB implements AddrBookDB.CreatePersonDB
+func (s *server) DeletePersonDB(ctx context.Context, in *pbdb.PersonRequestDB) (*pbdb.PersonReplyDB, error) {
+	person := new(pbdb.PersonReplyDB)
+
+	qry := fmt.Sprintf("DELETE FROM people WHERE id = %v", in.Id)
+	fmt.Println(qry)
+	statement, errDB := database.Prepare(qry)
+	if errDB == nil {
+		_, errSt := statement.Exec()
+
+		if errSt != nil {
 			log.Fatalf("DB error: %v", errDB)
 		}
 	} else {

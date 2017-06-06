@@ -43,6 +43,8 @@ service AddrBookRestAPI {
   rpc PostPerson (PersonReply) returns (PersonReply) {}
   // Updates a person details
   rpc PutPerson (PersonReply) returns (PersonReply) {}
+  // Deletes a person details
+  rpc DeletePerson (PersonRequest) returns (PersonReply) {}
 }
 
 // The request message containing the user's id.

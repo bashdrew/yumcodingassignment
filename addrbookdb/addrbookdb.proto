@@ -43,6 +43,8 @@ service AddrBookDB {
   rpc CreatePersonDB (PersonReplyDB) returns (PersonReplyDB) {}
   // Update a person details
   rpc UpdatePersonDB (PersonReplyDB) returns (PersonReplyDB) {}
+  // Delete a person details
+  rpc DeletePersonDB (PersonRequestDB) returns (PersonReplyDB) {}
 }
 
 // The request message containing the user's id.
