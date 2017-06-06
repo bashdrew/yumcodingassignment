@@ -37,6 +37,8 @@ package addrbookrestapi;
 
 // The greeting service definition.
 service AddrBookRestAPI {
+  // Gets people details
+  rpc GetPeople (PersonRequest) returns (PeopleReply) {}
   // Gets a person details
   rpc GetPerson (PersonRequest) returns (PersonReply) {}
   // Creates a person details

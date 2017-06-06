@@ -60,7 +60,28 @@ var database *sql.DB
 // server is used to implement AddrBookDB Methods.
 type server struct{}
 
-// ReadPersonDB implements AddrBookDB.ReadPersonDB
+// getPersonAll implements AddrBookDB.ReadPersonDB
+func getPeople() (people *pbdb.PeopleReplyDB, err error) {
+	people = new(pbdb.PeopleReplyDB)
+
+	qry := fmt.Sprintf("SELECT id, firstname, lastname, email, phoneno FROM people")
+	peopleDB, errDB := database.Query(qry)
+	defer peopleDB.Close()
+	if errDB == nil {
+		for peopleDB.Next() {
+			person := new(pbdb.PersonReplyDB)
+			peopleDB.Scan(&person.Id, &person.Firstname, &person.Lastname, &person.Email, &person.Phoneno)
+			people.People = append(people.People, person)
+		}
+	} else {
+		log.Fatalf("DB error: %v", errDB)
+		err = errDB
+	}
+
+	return people, err
+}
+
+// getPersonByID implements AddrBookDB.ReadPersonDB
 func getPersonByID(id int64) (person *pbdb.PersonReplyDB, err error) {
 	person = new(pbdb.PersonReplyDB)
 
@@ -95,6 +116,13 @@ func generateSetStatement(person *pbdb.PersonReplyDB) (result string) {
 	result = strings.TrimRight(result, ", ")
 
 	return
+}
+
+// ReadPeopleDB implements AddrBookDB.ReadPeopleDB
+func (s *server) ReadPeopleDB(ctx context.Context, in *pbdb.PersonRequestDB) (*pbdb.PeopleReplyDB, error) {
+	people, _ := getPeople()
+
+	return people, nil
 }
 
 // ReadPersonDB implements AddrBookDB.ReadPersonDB

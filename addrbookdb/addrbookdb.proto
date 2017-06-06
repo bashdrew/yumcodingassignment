@@ -37,6 +37,8 @@ package addrbookdb;
 
 // The greeting service definition.
 service AddrBookDB {
+  // Gets people details
+  rpc ReadPeopleDB (PersonRequestDB) returns (PeopleReplyDB) {}
   // Gets a person details
   rpc ReadPersonDB (PersonRequestDB) returns (PersonReplyDB) {}
   // Creats a person details

@@ -65,6 +65,36 @@ func getDBConn() (conn *grpc.ClientConn, client pbdb.AddrBookDBClient, err error
 	return
 }
 
+// GetPeople implements AddrBookRestAPI.GetPerson
+func (s *server) GetPeople(ctx context.Context, in *pb.PersonRequest) (*pb.PeopleReply, error) {
+	var peopleDB *pbdb.PeopleReplyDB
+	// Set up a connection to the server.
+	conn, c, err := getDBConn()
+	defer conn.Close()
+
+	if err == nil {
+		// Contact the server and print out its response.
+		peopleDB, err = c.ReadPeopleDB(context.Background(), &pbdb.PersonRequestDB{Id: in.Id})
+		if err != nil {
+			log.Fatalf("could not get person from DB: %v", err)
+		}
+	}
+
+	people := new(pb.PeopleReply)
+	for _, personDB := range peopleDB.People {
+		person := &pb.PersonReply{
+			Id:        personDB.Id,
+			Firstname: personDB.Firstname,
+			Lastname:  personDB.Lastname,
+			Email:     personDB.Email,
+			Phoneno:   personDB.Phoneno,
+		}
+
+		people.People = append(people.People, person)
+	}
+	return people, nil
+}
+
 // GetPerson implements AddrBookRestAPI.GetPerson
 func (s *server) GetPerson(ctx context.Context, in *pb.PersonRequest) (*pb.PersonReply, error) {
 	var person *pbdb.PersonReplyDB

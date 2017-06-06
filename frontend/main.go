@@ -36,8 +36,6 @@ type Person struct {
 	Phoneno   string `json:"phoneno,omitempty"`
 }
 
-var people []Person
-
 func getRestAPIConn() (conn *grpc.ClientConn, client pb.AddrBookRestAPIClient, err error) {
 	conn, err = grpc.Dial(restAPIAddress, grpc.WithInsecure())
 	if err != nil {
@@ -51,6 +49,18 @@ func getRestAPIConn() (conn *grpc.ClientConn, client pb.AddrBookRestAPIClient, e
 
 // GetPeopleEndpoint ... get person
 func GetPeopleEndpoint(w http.ResponseWriter, req *http.Request) {
+	var people *pb.PeopleReply
+	// Set up a connection to the server.
+	conn, c, err := getRestAPIConn()
+	defer conn.Close()
+	if err == nil {
+		// Contact the server and print out its response.
+		people, err = c.GetPeople(context.Background(), &pb.PersonRequest{Id: int64(-1)})
+		if err != nil {
+			log.Fatalf("could not get people: %v", err)
+		}
+	}
+
 	json.NewEncoder(w).Encode(people)
 }
 
