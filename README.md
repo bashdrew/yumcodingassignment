@@ -24,3 +24,13 @@ Test commands:
     curl -i -H "Accept: application/json" -H "Content-Type: application/json" -X PUT http://localhost:8082/people/1 --data '{"firstname":"John","lastname":"Smith","email":"john.smith@nomail.com","phoneno":"123-123-4233"}'
 
     curl -i -H "Accept: application/json" -H "Content-Type: application/json" -X DELETE http://localhost:8082/people/1
+
+
+Mock Test:
+
+    go get github.com/golang/mock/gomock
+    go get github.com/golang/mock/mockgen
+    
+    mockgen bashdrew/yumcodingassignment/addrbookrestapi AddrBookRestAPIClient > mock_addrbookrestapi/addrbookrestapi_mock.go
+
+    mockgen bashdrew/yumcodingassignment/addrbookdb AddrBookDBClient > mock_addrbookdb/addrbookdb_mock.go
