@@ -99,7 +99,7 @@ func CreatePersonEndpoint(w http.ResponseWriter, req *http.Request) {
 		id64, _ := strconv.ParseInt(params[colID], 10, 64)
 
 		person, err = c.PostPerson(context.Background(),
-			&pb.PersonReply{
+			&pb.PersonRequest{
 				Id:        id64,
 				Firstname: person.Firstname,
 				Lastname:  person.Lastname,
@@ -129,7 +129,7 @@ func UpdatePersonEndpoint(w http.ResponseWriter, req *http.Request) {
 		id64, _ := strconv.ParseInt(params[colID], 10, 64)
 
 		person, err = c.PutPerson(context.Background(),
-			&pb.PersonReply{
+			&pb.PersonRequest{
 				Id:        id64,
 				Firstname: person.Firstname,
 				Lastname:  person.Lastname,

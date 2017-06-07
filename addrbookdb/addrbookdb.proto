@@ -42,16 +42,25 @@ service AddrBookDB {
   // Gets a person details
   rpc ReadPersonDB (PersonRequestDB) returns (PersonReplyDB) {}
   // Creats a person details
-  rpc CreatePersonDB (PersonReplyDB) returns (PersonReplyDB) {}
+  rpc CreatePersonDB (PersonRequestDB) returns (PersonReplyDB) {}
   // Update a person details
-  rpc UpdatePersonDB (PersonReplyDB) returns (PersonReplyDB) {}
+  rpc UpdatePersonDB (PersonRequestDB) returns (PersonReplyDB) {}
   // Delete a person details
   rpc DeletePersonDB (PersonRequestDB) returns (PersonReplyDB) {}
 }
 
 // The request message containing the user's id.
+/*message PersonRequestDB {
+  int64 id = 1;
+}*/
+
+// The request message containing the user's id.
 message PersonRequestDB {
   int64 id = 1;
+  string firstname = 2;
+  string lastname = 3;
+  string email = 4;
+  string phoneno = 5;
 }
 
 // The request message containing the user's id.
@@ -61,9 +70,11 @@ message PersonReplyDB {
   string lastname = 3;
   string email = 4;
   string phoneno = 5;
+  string error = 6;
 }
 
 // The response message containing the list of persons
 message PeopleReplyDB {
   repeated PersonReplyDB people = 1;
+  string error = 2;
 }

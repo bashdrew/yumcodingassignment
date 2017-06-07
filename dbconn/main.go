@@ -74,7 +74,8 @@ func getPeople() (people *pbdb.PeopleReplyDB, err error) {
 			people.People = append(people.People, person)
 		}
 	} else {
-		log.Fatalf("DB error: %v", errDB)
+		log.Printf("DB error: %v", errDB)
+		people.Error = errDB.Error()
 		err = errDB
 	}
 
@@ -92,14 +93,14 @@ func getPersonByID(id int64) (person *pbdb.PersonReplyDB, err error) {
 		personDB.Next()
 		personDB.Scan(&person.Id, &person.Firstname, &person.Lastname, &person.Email, &person.Phoneno)
 	} else {
-		log.Fatalf("DB error: %v", errDB)
+		log.Printf("DB error: %v", errDB)
 		err = errDB
 	}
 
 	return person, err
 }
 
-func generateSetStatement(person *pbdb.PersonReplyDB) (result string) {
+func generateSetStatement(person *pbdb.PersonRequestDB) (result string) {
 	updCols := []string{"id", "firstname", "lastname", "email", "phoneno"}
 
 	v := reflect.ValueOf(*person)
@@ -133,7 +134,7 @@ func (s *server) ReadPersonDB(ctx context.Context, in *pbdb.PersonRequestDB) (*p
 }
 
 // CreatePersonDB implements AddrBookDB.CreatePersonDB
-func (s *server) CreatePersonDB(ctx context.Context, in *pbdb.PersonReplyDB) (*pbdb.PersonReplyDB, error) {
+func (s *server) CreatePersonDB(ctx context.Context, in *pbdb.PersonRequestDB) (*pbdb.PersonReplyDB, error) {
 	person := new(pbdb.PersonReplyDB)
 
 	qry := fmt.Sprintf("INSERT INTO people (id, firstname, lastname, email, phoneno) VALUES (?, ?, ?, ?, ?)")
@@ -144,22 +145,23 @@ func (s *server) CreatePersonDB(ctx context.Context, in *pbdb.PersonReplyDB) (*p
 		if errSt == nil {
 			person, _ = getPersonByID(in.Id)
 		} else {
-			log.Fatalf("DB error: %v", errDB)
+			person.Error = errSt.Error()
+			log.Printf("DB error: %v", errSt)
 		}
 	} else {
-		log.Fatalf("DB error: %v", errDB)
+		person.Error = errDB.Error()
+		log.Printf("DB error: %v", errDB)
 	}
 
 	return person, nil
 }
 
 // UpdatePersonDB implements AddrBookDB.CreatePersonDB
-func (s *server) UpdatePersonDB(ctx context.Context, in *pbdb.PersonReplyDB) (*pbdb.PersonReplyDB, error) {
+func (s *server) UpdatePersonDB(ctx context.Context, in *pbdb.PersonRequestDB) (*pbdb.PersonReplyDB, error) {
 	person := new(pbdb.PersonReplyDB)
 
 	qrySet := generateSetStatement(in)
 	qry := fmt.Sprintf("UPDATE people %v WHERE id = %v", qrySet, in.Id)
-	fmt.Println(qry)
 	statement, errDB := database.Prepare(qry)
 	if errDB == nil {
 		_, errSt := statement.Exec()
@@ -167,10 +169,12 @@ func (s *server) UpdatePersonDB(ctx context.Context, in *pbdb.PersonReplyDB) (*p
 		if errSt == nil {
 			person, _ = getPersonByID(in.Id)
 		} else {
-			log.Fatalf("DB error: %v", errDB)
+			person.Error = errSt.Error()
+			log.Printf("DB error: %v", errSt)
 		}
 	} else {
-		log.Fatalf("DB error: %v", errDB)
+		person.Error = errDB.Error()
+		log.Printf("DB error: %v", errDB)
 	}
 
 	return person, nil
@@ -181,16 +185,17 @@ func (s *server) DeletePersonDB(ctx context.Context, in *pbdb.PersonRequestDB) (
 	person := new(pbdb.PersonReplyDB)
 
 	qry := fmt.Sprintf("DELETE FROM people WHERE id = %v", in.Id)
-	fmt.Println(qry)
 	statement, errDB := database.Prepare(qry)
 	if errDB == nil {
 		_, errSt := statement.Exec()
 
 		if errSt != nil {
-			log.Fatalf("DB error: %v", errDB)
+			person.Error = errSt.Error()
+			log.Printf("DB error: %v", errSt)
 		}
 	} else {
-		log.Fatalf("DB error: %v", errDB)
+		person.Error = errDB.Error()
+		log.Printf("DB error: %v", errDB)
 	}
 
 	return person, nil

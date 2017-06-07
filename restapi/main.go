@@ -88,6 +88,7 @@ func (s *server) GetPeople(ctx context.Context, in *pb.PersonRequest) (*pb.Peopl
 			Lastname:  personDB.Lastname,
 			Email:     personDB.Email,
 			Phoneno:   personDB.Phoneno,
+			Error:     personDB.Error,
 		}
 
 		people.People = append(people.People, person)
@@ -116,37 +117,51 @@ func (s *server) GetPerson(ctx context.Context, in *pb.PersonRequest) (*pb.Perso
 		Lastname:  person.Lastname,
 		Email:     person.Email,
 		Phoneno:   person.Phoneno,
+		Error:     person.Error,
 	}, nil
 }
 
 // PostPeople implements AddrBookRestAPI.PostPeople
 func (s *server) PostPeople(ctx context.Context, in *pb.PeopleReply) (*pb.PeopleReply, error) {
 	// Set up a connection to the server.
-	conn, c, err := getDBConn()
+	conn, c, errDB := getDBConn()
 	defer conn.Close()
 
-	if err == nil {
+	people := new(pb.PeopleReply)
+	if errDB == nil {
 		for _, person := range in.People {
 			// Contact the server and print out its response.
-			_, err = c.CreatePersonDB(context.Background(),
-				&pbdb.PersonReplyDB{
+			personDB, err := c.CreatePersonDB(context.Background(),
+				&pbdb.PersonRequestDB{
 					Id:        person.Id,
 					Firstname: person.Firstname,
 					Lastname:  person.Lastname,
 					Email:     person.Email,
 					Phoneno:   person.Phoneno,
 				})
-			if err != nil {
-				log.Fatalf("could not post person to DB: %v", err)
+			personOut := &pb.PersonReply{
+				Id:        personDB.Id,
+				Firstname: personDB.Firstname,
+				Lastname:  personDB.Lastname,
+				Email:     personDB.Email,
+				Phoneno:   personDB.Phoneno,
+				Error:     personDB.Error,
 			}
+			if err != nil {
+				log.Printf("could not post person to DB: %v", err)
+				personOut.Error = err.Error()
+			}
+			people.People = append(people.People, personOut)
 		}
+	} else {
+		people.Error = errDB.Error()
 	}
 
-	return in, nil
+	return people, nil
 }
 
 // PostPerson implements AddrBookRestAPI.PostPerson
-func (s *server) PostPerson(ctx context.Context, in *pb.PersonReply) (*pb.PersonReply, error) {
+func (s *server) PostPerson(ctx context.Context, in *pb.PersonRequest) (*pb.PersonReply, error) {
 	var person *pbdb.PersonReplyDB
 	// Set up a connection to the server.
 	conn, c, err := getDBConn()
@@ -155,7 +170,7 @@ func (s *server) PostPerson(ctx context.Context, in *pb.PersonReply) (*pb.Person
 	if err == nil {
 		// Contact the server and print out its response.
 		person, err = c.CreatePersonDB(context.Background(),
-			&pbdb.PersonReplyDB{
+			&pbdb.PersonRequestDB{
 				Id:        in.Id,
 				Firstname: in.Firstname,
 				Lastname:  in.Lastname,
@@ -173,11 +188,12 @@ func (s *server) PostPerson(ctx context.Context, in *pb.PersonReply) (*pb.Person
 		Lastname:  person.Lastname,
 		Email:     person.Email,
 		Phoneno:   person.Phoneno,
+		Error:     person.Error,
 	}, nil
 }
 
 // PutPerson implements AddrBookRestAPI.PutPerson
-func (s *server) PutPerson(ctx context.Context, in *pb.PersonReply) (*pb.PersonReply, error) {
+func (s *server) PutPerson(ctx context.Context, in *pb.PersonRequest) (*pb.PersonReply, error) {
 	var person *pbdb.PersonReplyDB
 	// Set up a connection to the server.
 	conn, c, err := getDBConn()
@@ -186,7 +202,7 @@ func (s *server) PutPerson(ctx context.Context, in *pb.PersonReply) (*pb.PersonR
 	if err == nil {
 		// Contact the server and print out its response.
 		person, err = c.UpdatePersonDB(context.Background(),
-			&pbdb.PersonReplyDB{
+			&pbdb.PersonRequestDB{
 				Id:        in.Id,
 				Firstname: in.Firstname,
 				Lastname:  in.Lastname,
@@ -204,6 +220,7 @@ func (s *server) PutPerson(ctx context.Context, in *pb.PersonReply) (*pb.PersonR
 		Lastname:  person.Lastname,
 		Email:     person.Email,
 		Phoneno:   person.Phoneno,
+		Error:     person.Error,
 	}, nil
 }
 
@@ -228,6 +245,7 @@ func (s *server) DeletePerson(ctx context.Context, in *pb.PersonRequest) (*pb.Pe
 		Lastname:  person.Lastname,
 		Email:     person.Email,
 		Phoneno:   person.Phoneno,
+		Error:     person.Error,
 	}, nil
 }
 

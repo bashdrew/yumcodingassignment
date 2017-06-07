@@ -44,16 +44,25 @@ service AddrBookRestAPI {
   // Creates a person details
   rpc PostPeople (PeopleReply) returns (PeopleReply) {}
   // Updates a person details
-  rpc PostPerson (PersonReply) returns (PersonReply) {}
+  rpc PostPerson (PersonRequest) returns (PersonReply) {}
   // Updates a person details
-  rpc PutPerson (PersonReply) returns (PersonReply) {}
+  rpc PutPerson (PersonRequest) returns (PersonReply) {}
   // Deletes a person details
   rpc DeletePerson (PersonRequest) returns (PersonReply) {}
 }
 
 // The request message containing the user's id.
+/*message PersonRequest {
+  int64 id = 1;
+}*/
+
+// The request message containing the user's id.
 message PersonRequest {
   int64 id = 1;
+  string firstname = 2;
+  string lastname = 3;
+  string email = 4;
+  string phoneno = 5;
 }
 
 // The request message containing the user's id.
@@ -63,9 +72,11 @@ message PersonReply {
   string lastname = 3;
   string email = 4;
   string phoneno = 5;
+  string error = 6;
 }
 
 // The response message containing the list of persons
 message PeopleReply {
   repeated PersonReply people = 1;
+  string error = 2;
 }
