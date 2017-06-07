@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -12,11 +14,12 @@ import (
 
 	"google.golang.org/grpc"
 
+	"github.com/gocarina/gocsv"
 	"github.com/gorilla/mux"
 )
 
 const (
-	port           = ":8080"
+	port           = ":8082"
 	restAPIAddress = "localhost:50051"
 )
 
@@ -27,14 +30,6 @@ const (
 	colEmail     = "email"
 	colPhoneno   = "phoneno"
 )
-
-type Person struct {
-	ID        string `json:"id,omitemty"`
-	Firstname string `json:"firstname,omitemty"`
-	Lastname  string `json:"lastname,omitemty"`
-	Email     string `json:"email,omitempty"`
-	Phoneno   string `json:"phoneno,omitempty"`
-}
 
 func getRestAPIConn() (conn *grpc.ClientConn, client pb.AddrBookRestAPIClient, err error) {
 	conn, err = grpc.Dial(restAPIAddress, grpc.WithInsecure())
@@ -47,19 +42,24 @@ func getRestAPIConn() (conn *grpc.ClientConn, client pb.AddrBookRestAPIClient, e
 	return
 }
 
-// GetPeopleEndpoint ... get person
-func GetPeopleEndpoint(w http.ResponseWriter, req *http.Request) {
-	var people *pb.PeopleReply
+func getPeopleList() (result *pb.PeopleReply) {
 	// Set up a connection to the server.
 	conn, c, err := getRestAPIConn()
 	defer conn.Close()
 	if err == nil {
 		// Contact the server and print out its response.
-		people, err = c.GetPeople(context.Background(), &pb.PersonRequest{Id: int64(-1)})
+		result, err = c.GetPeople(context.Background(), &pb.PersonRequest{Id: int64(-1)})
 		if err != nil {
 			log.Fatalf("could not get people: %v", err)
 		}
 	}
+
+	return
+}
+
+// GetPeopleEndpoint ... get people
+func GetPeopleEndpoint(w http.ResponseWriter, req *http.Request) {
+	people := getPeopleList()
 
 	json.NewEncoder(w).Encode(people)
 }
@@ -164,6 +164,45 @@ func DeletePersonEndpoint(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(person)
 }
 
+// GetPeopleCSVEndpoint ... get people
+func GetPeopleCSVEndpoint(w http.ResponseWriter, req *http.Request) {
+	people := getPeopleList()
+
+	gocsv.SetCSVWriter(func(out io.Writer) *csv.Writer {
+		return csv.NewWriter(w)
+	})
+	_, errCSV := gocsv.MarshalBytes(people.People)
+	if errCSV != nil {
+		log.Fatalf("End point error: %v", errCSV)
+	}
+}
+
+// PostPeopleCSVEndpoint ... post people
+func PostPeopleCSVEndpoint(w http.ResponseWriter, req *http.Request) {
+	people := new(pb.PeopleReply)
+
+	gocsv.SetCSVWriter(func(out io.Writer) *csv.Writer {
+		return csv.NewWriter(w)
+	})
+	errCSV := gocsv.Unmarshal(req.Body, &people.People)
+	if errCSV != nil {
+		log.Fatalf("End point error: %v", errCSV)
+	} else {
+		// Set up a connection to the server.
+		conn, c, err := getRestAPIConn()
+		defer conn.Close()
+		if err == nil {
+			// Contact the server and print out its response.
+			_, err = c.PostPeople(context.Background(), people)
+			if err != nil {
+				log.Fatalf("could not post people: %v", err)
+			}
+		}
+	}
+
+	json.NewEncoder(w).Encode(people)
+}
+
 func setupRestAPIConn() (conn *grpc.ClientConn, err error) {
 	// Set up a connection to the server
 	conn, err = grpc.Dial(restAPIAddress, grpc.WithInsecure())
@@ -182,6 +221,8 @@ func main() {
 	router.HandleFunc("/people/{"+colID+"}", CreatePersonEndpoint).Methods("POST")
 	router.HandleFunc("/people/{"+colID+"}", UpdatePersonEndpoint).Methods("PUT")
 	router.HandleFunc("/people/{"+colID+"}", DeletePersonEndpoint).Methods("DELETE")
+	router.HandleFunc("/people/csv/download", GetPeopleCSVEndpoint).Methods("GET")
+	router.HandleFunc("/people/csv/upload", PostPeopleCSVEndpoint).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(port, router))
 }

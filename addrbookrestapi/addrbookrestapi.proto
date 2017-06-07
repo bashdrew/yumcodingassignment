@@ -42,6 +42,8 @@ service AddrBookRestAPI {
   // Gets a person details
   rpc GetPerson (PersonRequest) returns (PersonReply) {}
   // Creates a person details
+  rpc PostPeople (PeopleReply) returns (PeopleReply) {}
+  // Updates a person details
   rpc PostPerson (PersonReply) returns (PersonReply) {}
   // Updates a person details
   rpc PutPerson (PersonReply) returns (PersonReply) {}

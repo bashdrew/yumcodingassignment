@@ -227,10 +227,6 @@ func main() {
 		return
 	}
 
-	// initialize mock data
-	statement, _ := database.Prepare("INSERT INTO people (id, firstname, lastname) VALUES (?, ?, ?)")
-	statement.Exec(1, "Andrew", "Amargo")
-
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)

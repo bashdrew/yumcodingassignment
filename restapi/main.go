@@ -119,6 +119,32 @@ func (s *server) GetPerson(ctx context.Context, in *pb.PersonRequest) (*pb.Perso
 	}, nil
 }
 
+// PostPeople implements AddrBookRestAPI.PostPeople
+func (s *server) PostPeople(ctx context.Context, in *pb.PeopleReply) (*pb.PeopleReply, error) {
+	// Set up a connection to the server.
+	conn, c, err := getDBConn()
+	defer conn.Close()
+
+	if err == nil {
+		for _, person := range in.People {
+			// Contact the server and print out its response.
+			_, err = c.CreatePersonDB(context.Background(),
+				&pbdb.PersonReplyDB{
+					Id:        person.Id,
+					Firstname: person.Firstname,
+					Lastname:  person.Lastname,
+					Email:     person.Email,
+					Phoneno:   person.Phoneno,
+				})
+			if err != nil {
+				log.Fatalf("could not post person to DB: %v", err)
+			}
+		}
+	}
+
+	return in, nil
+}
+
 // PostPerson implements AddrBookRestAPI.PostPerson
 func (s *server) PostPerson(ctx context.Context, in *pb.PersonReply) (*pb.PersonReply, error) {
 	var person *pbdb.PersonReplyDB
