@@ -193,7 +193,7 @@ func PostPeopleCSVEndpoint(w http.ResponseWriter, req *http.Request) {
 		defer conn.Close()
 		if err == nil {
 			// Contact the server and print out its response.
-			_, err = c.PostPeople(context.Background(), people)
+			people, err = c.PostPeople(context.Background(), people)
 			if err != nil {
 				log.Fatalf("could not post people: %v", err)
 			}

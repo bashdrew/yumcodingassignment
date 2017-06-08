@@ -140,12 +140,8 @@ func (s *server) PostPeople(ctx context.Context, in *pb.PeopleReply) (*pb.People
 					Phoneno:   person.Phoneno,
 				})
 			personOut := &pb.PersonReply{
-				Id:        personDB.Id,
-				Firstname: personDB.Firstname,
-				Lastname:  personDB.Lastname,
-				Email:     personDB.Email,
-				Phoneno:   personDB.Phoneno,
-				Error:     personDB.Error,
+				Id:    person.Id,
+				Error: personDB.Error,
 			}
 			if err != nil {
 				log.Printf("could not post person to DB: %v", err)
