@@ -25,6 +25,14 @@ Test commands:
 
     curl -i -H "Accept: application/json" -H "Content-Type: application/json" -X DELETE http://localhost:8082/people/1
 
+    curl -i -H "Accept: application/json" -H "Content-Type: application/json" -X POST http://localhost:8082/people/csv/upload --data '
+    Id,Firstname,Lastname,Email,Phoneno,Error
+    2,John,Smith,john.smith@nomail.com,123-123-4233,
+    3,Mark,Smith,mark.smith@nomail.com,123-123-4233,
+    10,Luke,Smith,luke.smith@nomail.com,123-123-4233,
+    1,Matthew,Smith,matthew.smith@nomail.com,123-123-4233,'
+
+    curl -i -H "Accept: application/json" -H "Content-Type: application/json" -X GET http://localhost:8082/people/csv/download
 
 Mock Test:
 
