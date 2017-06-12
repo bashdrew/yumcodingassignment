@@ -8,7 +8,7 @@ Packages used:
 Source files:
     dbconn/main.go - DB connections service
     frontend/main.go - Front-end service
-    restapi/main.go - REST API service
+    restapi/main.go - REST API service/Business Logic
 
 Commands used:
     protoc -I addrbookdb/ addrbookdb/addrbookdb.proto --go_out=plugins=grpc:addrbookdb
